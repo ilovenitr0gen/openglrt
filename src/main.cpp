@@ -1,6 +1,11 @@
 #include <print>
 
+#include "glad/glad.h"
+#include <GLFW/glfw3.h>
+
 #include "DisplayWindow.hpp"
+#include "Shader.h"
+
 
 constexpr unsigned int WINDOW_WIDTH = 600;
 constexpr unsigned int WINDOW_HEIGHT = 400;
@@ -11,6 +16,23 @@ int main() {
 	std::println("Hello!");
 
 	DisplayWindow window;
+	
+	const std::string vertexSource = 
+	#include "shaders/shader.vert"
+	;
+
+	const std::string fragmentSource = 
+	#include "shaders/shader.frag"
+	;
+
+	Shader shader(vertexSource, fragmentSource);
+
+	while (window.shouldClose()) {
+		// glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+		//
+		window.swapBuffers();
+		glfwPollEvents();
+	}
 
 	return 0;
 }

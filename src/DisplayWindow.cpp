@@ -1,5 +1,7 @@
 #include "DisplayWindow.hpp"
 
+#include <stdexcept>
+
 DisplayWindow::DisplayWindow() {
 
 	glfwInit();
@@ -28,12 +30,10 @@ DisplayWindow::DisplayWindow() {
 		window, [](GLFWwindow *window, const int width, const int height) {
 			glViewport(0, 0, width, height);
 		});
-
-	while (!glfwWindowShouldClose(window)) {
-		// glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
 }
 
 DisplayWindow::~DisplayWindow() { glfwTerminate(); }
+
+bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window); }
+
+void DisplayWindow::swapBuffers() { glfwSwapBuffers(window); }
