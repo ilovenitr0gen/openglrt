@@ -24,7 +24,10 @@ endif()
 include_directories(.)
 
 add_executable(project123
-        main.cpp)
+        main.cpp
+		DisplayWindow.cpp
+		glad/glad.c
+	)
 
 IF(WIN32)
 		target_link_libraries(project123
