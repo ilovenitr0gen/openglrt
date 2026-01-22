@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include "DisplayWindow.hpp"
-#include "Shader.h"
+#include "Shader.hpp"
 
 
 constexpr unsigned int WINDOW_WIDTH = 600;
@@ -27,9 +27,9 @@ int main() {
 
 	Shader shader(vertexSource, fragmentSource);
 
-	while (window.shouldClose()) {
-		// glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
-		//
+	while (!window.shouldClose()) {
+		glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 		window.swapBuffers();
 		glfwPollEvents();
 	}

@@ -26,6 +26,7 @@ include_directories(.)
 add_executable(project123
         main.cpp
 		DisplayWindow.cpp
+		Shader.cpp
 		glad/glad.c
 	)
 
