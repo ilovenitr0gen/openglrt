@@ -3,9 +3,15 @@
 
 #include <string>
 
+struct ShaderInfo {
+	std::string vertexSource;
+	std::string fragmentSource;
+	std::string computeSource;
+};
+
 class Shader {
 	public:
-		Shader(const std::string& vertexSource, const std::string& fragmentSource);
+		Shader(const ShaderInfo shaderInfo);
 		~Shader();
 
 		void use() const;

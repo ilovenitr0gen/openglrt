@@ -1,5 +1,6 @@
 #include "DisplayWindow.hpp"
 
+#include <iostream>
 #include <stdexcept>
 
 DisplayWindow::DisplayWindow() {
@@ -18,13 +19,15 @@ DisplayWindow::DisplayWindow() {
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0);
+	// glfwSwapInterval(0);
 
 	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
 		throw std::runtime_error("GLAD initialization failed");
 	}
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+	glEnable(GL_DEPTH_TEST);
 
 	glfwSetFramebufferSizeCallback(
 		window, [](GLFWwindow *window, const int width, const int height) {
