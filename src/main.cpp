@@ -15,6 +15,12 @@ int main() {
 
 	DisplayWindow window;
 
+	// This has to be done for OpenGL to render anything for some reason,
+	// regardless of if it is needed
+	unsigned int vao = 0;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
 	const std::string vertexSource =
 #include "shaders/shader.vert"
 		;
@@ -23,11 +29,12 @@ int main() {
 #include "shaders/shader.frag"
 		;
 
-	Shader shader(ShaderInfo{.vertexSource=vertexSource, .fragmentSource=fragmentSource});
+	Shader shader(ShaderInfo{.vertexSource = vertexSource,
+							 .fragmentSource = fragmentSource});
 
 	while (!window.shouldClose()) {
-		//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		shader.use();
 		glDrawArrays(GL_TRIANGLES, 0, 3);
