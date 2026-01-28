@@ -10,8 +10,8 @@ DisplayWindow::DisplayWindow() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window =
-		glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE,
+							  nullptr, nullptr);
 
 	if (window == nullptr) {
 		throw std::runtime_error("Window creation failed");
@@ -20,7 +20,8 @@ DisplayWindow::DisplayWindow() {
 	glfwMakeContextCurrent(window);
 	// glfwSwapInterval(0);
 
-	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+	if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) ==
+		0) {
 		throw std::runtime_error("GLAD initialization failed");
 	}
 
@@ -39,9 +40,10 @@ DisplayWindow::DisplayWindow() {
 	glBindVertexArray(vao);
 }
 
-DisplayWindow::~DisplayWindow() { glfwTerminate(); 
+DisplayWindow::~DisplayWindow() {
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vao);
+	glfwTerminate();
 }
 
 bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window) != 0; }
