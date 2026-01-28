@@ -1,5 +1,6 @@
 #include <print>
 
+#include "Raytracer.hpp"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
@@ -12,32 +13,15 @@ constexpr char WINDOW_TITLE[] = "Title";
 
 int main() {
 	std::println("Hello!");
-
+	
 	DisplayWindow window;
-
-	// This has to be done for OpenGL to render anything for some reason,
-	// regardless of if it is needed
-	unsigned int vao = 0;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	const std::string vertexSource =
-#include "shaders/shader.vert"
-		;
-
-	const std::string fragmentSource =
-#include "shaders/shader.frag"
-		;
-
-	Shader shader(ShaderInfo{.vertexSource = vertexSource,
-							 .fragmentSource = fragmentSource});
+	Raytracer raytracer;
 
 	while (!window.shouldClose()) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		shader.use();
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		raytracer.draw(glm::vec3(0), glm::vec3(0));
 
 		window.swapBuffers();
 		glfwPollEvents();

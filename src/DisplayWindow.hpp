@@ -17,4 +17,5 @@ class DisplayWindow {
 	void swapBuffers();
   private:
 	GLFWwindow *window;
+	unsigned int vao = 0;
 };

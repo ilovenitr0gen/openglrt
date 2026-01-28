@@ -4,7 +4,6 @@
 #include <stdexcept>
 
 DisplayWindow::DisplayWindow() {
-
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -33,10 +32,18 @@ DisplayWindow::DisplayWindow() {
 		window, [](GLFWwindow *window, const int width, const int height) {
 			glViewport(0, 0, width, height);
 		});
+
+	// This has to be done for OpenGL to render anything for some reason,
+	// regardless of if it is needed
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 }
 
-DisplayWindow::~DisplayWindow() { glfwTerminate(); }
+DisplayWindow::~DisplayWindow() { glfwTerminate(); 
+	glBindVertexArray(0);
+	glDeleteVertexArrays(1, &vao);
+}
 
-bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window); }
+bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window) != 0; }
 
 void DisplayWindow::swapBuffers() { glfwSwapBuffers(window); }
