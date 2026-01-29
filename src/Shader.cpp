@@ -43,7 +43,7 @@ Shader::Shader(const ShaderInfo shaderInfo) : id(glCreateProgram()) {
 
 	if (!shaderInfo.computeSource.empty()) {
 		compute = glCreateShader(GL_COMPUTE_SHADER);
-		const char *computeChars = shaderInfo.fragmentSource.c_str();
+		const char *computeChars = shaderInfo.computeSource.c_str();
 		glShaderSource(compute, 1, &computeChars, nullptr);
 		glCompileShader(compute);
 		glGetShaderiv(compute, GL_COMPILE_STATUS, &success);

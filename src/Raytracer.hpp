@@ -11,5 +11,6 @@ class Raytracer {
 
   private:
 	unsigned int imageOutput;
-	Shader shader;
+	Shader displayShader;
+	Shader renderShader;
 };

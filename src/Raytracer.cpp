@@ -8,11 +8,19 @@ const std::string fragmentSource =
 #include "shaders/shader.frag"
 	;
 
+const std::string computeSource =
+#include "shaders/shader.comp"
+	;
+
 Raytracer::Raytracer()
-	: shader(ShaderInfo{.vertexSource = vertexSource,
-						.fragmentSource = fragmentSource}) {}
+	: displayShader(ShaderInfo{.vertexSource = vertexSource,
+							   .fragmentSource = fragmentSource}),
+	  renderShader(ShaderInfo{.computeSource = computeSource}) {
+		 
+	  }
 
 void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir) {
-	shader.use();
+
+	displayShader.use();
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }

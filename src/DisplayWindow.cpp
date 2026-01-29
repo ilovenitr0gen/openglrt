@@ -20,6 +20,8 @@ DisplayWindow::DisplayWindow() {
 	glfwMakeContextCurrent(window);
 	// glfwSwapInterval(0);
 
+	glfwSetWindowUserPointer(window, this);
+
 	if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) ==
 		0) {
 		throw std::runtime_error("GLAD initialization failed");
@@ -31,6 +33,13 @@ DisplayWindow::DisplayWindow() {
 
 	glfwSetFramebufferSizeCallback(
 		window, [](GLFWwindow *window, const int width, const int height) {
+			for (auto &callback : static_cast<DisplayWindow*>(glfwGetWindowUserPointer(window))->framebufferSizeCallbacks) {
+				callback(window, width, height);
+			}
+		});
+
+	registerFramebufferSizeCallback(
+		[](GLFWwindow *window, const int width, const int height) {
 			glViewport(0, 0, width, height);
 		});
 
@@ -44,6 +53,19 @@ DisplayWindow::~DisplayWindow() {
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vao);
 	glfwTerminate();
+}
+
+std::list<std::function<void(GLFWwindow *, const int, const int)>>::iterator
+DisplayWindow::registerFramebufferSizeCallback(
+	std::function<void(GLFWwindow *, const int, const int)> callback) {
+	framebufferSizeCallbacks.emplace_back(std::move(callback));
+	return --framebufferSizeCallbacks.end();
+}
+
+void DisplayWindow::unregisterFramebufferSizeCallback(
+	std::list<std::function<void(GLFWwindow *, const int, const int)>>::iterator
+		iter) {
+	framebufferSizeCallbacks.erase(iter);
 }
 
 bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window) != 0; }
