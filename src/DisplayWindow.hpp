@@ -22,6 +22,8 @@ class DisplayWindow {
 		std::list<std::function<void(GLFWwindow *, const int, const int)>>::
 			iterator iter);
 
+	std::pair<int, int> getFramebufferSize();
+
 	bool shouldClose();
 	void swapBuffers();
 

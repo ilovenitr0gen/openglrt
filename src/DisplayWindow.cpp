@@ -29,17 +29,17 @@ DisplayWindow::DisplayWindow() {
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	glEnable(GL_DEPTH_TEST);
-
 	glfwSetFramebufferSizeCallback(
 		window, [](GLFWwindow *window, const int width, const int height) {
-			for (auto &callback : static_cast<DisplayWindow*>(glfwGetWindowUserPointer(window))->framebufferSizeCallbacks) {
+			for (auto &callback :
+				 static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))
+					 ->framebufferSizeCallbacks) {
 				callback(window, width, height);
 			}
 		});
 
 	registerFramebufferSizeCallback(
-		[](GLFWwindow *window, const int width, const int height) {
+		[](GLFWwindow * /*window*/, const int width, const int height) {
 			glViewport(0, 0, width, height);
 		});
 
@@ -66,6 +66,12 @@ void DisplayWindow::unregisterFramebufferSizeCallback(
 	std::list<std::function<void(GLFWwindow *, const int, const int)>>::iterator
 		iter) {
 	framebufferSizeCallbacks.erase(iter);
+}
+
+std::pair<int, int> DisplayWindow::getFramebufferSize() {
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+	return {width, height};
 }
 
 bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window) != 0; }

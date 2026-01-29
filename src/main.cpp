@@ -15,7 +15,7 @@ int main() {
 	std::println("Hello!");
 	
 	DisplayWindow window;
-	Raytracer raytracer;
+	Raytracer raytracer(window);
 
 	while (!window.shouldClose()) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
