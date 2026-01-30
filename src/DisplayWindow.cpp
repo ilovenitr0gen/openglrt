@@ -52,6 +52,15 @@ DisplayWindow::DisplayWindow() {
 			}
 		});
 
+	glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode,
+								  int action, int mods) {
+		for (auto &callback :
+			 static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))
+				 ->keyCallbacks) {
+			callback(window, key, scancode, action, mods);
+		}
+	});
+
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// This has to be done for OpenGL to render anything for some reason,
@@ -93,6 +102,30 @@ void DisplayWindow::unregisterCursorPosCallback(
 	cursorPosCallbacks.erase(iter);
 }
 
+std::list<std::function<void(GLFWwindow *, int, int, int, int)>>::iterator
+DisplayWindow::registerKeyCallback(
+	std::function<void(GLFWwindow *, int, int, int, int)> callback) {
+	keyCallbacks.emplace_back(std::move(callback));
+	return --keyCallbacks.end();
+}
+
+void DisplayWindow::unregisterKeyCallback(
+	std::list<std::function<void(GLFWwindow *, int, int, int, int)>>::iterator
+		iter) {
+	keyCallbacks.erase(iter);
+}
+
+std::list<std::function<void()>>::iterator
+DisplayWindow::registerTickCallback(std::function<void()> callback) {
+	tickCallbacks.emplace_back(std::move(callback));
+	return --tickCallbacks.end();
+}
+
+void DisplayWindow::unregisterTickCallback(
+	std::list<std::function<void()>>::iterator iter) {
+	tickCallbacks.erase(iter);
+}
+
 std::pair<int, int> DisplayWindow::getFramebufferSize() {
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
@@ -101,4 +134,15 @@ std::pair<int, int> DisplayWindow::getFramebufferSize() {
 
 bool DisplayWindow::shouldClose() { return glfwWindowShouldClose(window) != 0; }
 
-void DisplayWindow::swapBuffers() { glfwSwapBuffers(window); }
+void DisplayWindow::swapBuffers() {
+	glfwSwapBuffers(window);
+	double currentTime = glfwGetTime();
+	deltaTime_ = currentTime - lastFrame;
+	lastFrame = currentTime;
+
+	for (auto &callback : tickCallbacks) {
+		callback();
+	}
+}
+
+double DisplayWindow::deltaTime() const { return deltaTime_; }

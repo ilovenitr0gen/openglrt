@@ -5,9 +5,20 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imageOut;
 
+struct Sphere {
+	vec3 position;
+	float radiusSquared;
+	vec3 color;
+};
+
 struct Ray {
 	vec3 origin;
 	vec3 direction;
+};
+
+Sphere spheres[] = {
+	Sphere(vec3(10,0,0), 100, vec3(0,1,0)),
+	Sphere(vec3(0,10,0), 64, vec3(0,0,1))
 };
 
 uniform vec3 cameraPos;
@@ -20,11 +31,33 @@ uniform float fieldOfView;
 //gl_NumWorkGroups is equal to the resolution of the image to be rendered  
 //gl_GlobalInvocationID is equal to the position of the current pixel as an integer
 
+float testSphere(Ray ray, Sphere sphere) {
+	ray.origin += sphere.position;// this simplifies the intersection equation
+	float originDotDirection = dot(ray.origin, ray.direction);
+	float discriminant = pow(originDotDirection, 2) - (dot(ray.origin, ray.origin) - sphere.radiusSquared);
+	if (discriminant == 0) {
+		return -originDotDirection;
+	} else if (discriminant > 0) {
+		float discriminantRoot = sqrt(discriminant);
+		float d_1 = -originDotDirection + discriminantRoot;
+		float d_2 = -originDotDirection - discriminantRoot;
+		if (d_1 > 0 && d_2 > 0) {
+			return min(d_1, d_2);
+		} else if (d_1 > 0) {
+			return d_1;
+		} else if (d_2 > 0) {
+			return d_2;
+		}
+	}
+	
+	return -1; //no solutions	
+}
+
 void main() {
 
 	//TODO move this to precalculation outside the shader
 	float g_x = tan(fieldOfView/2); //Half the width of the viewport
-	float g_y = g_x * ((gl_NumWorkGroups.y -1) / (gl_NumWorkGroups.x -1)); //Half the height of the viewport
+	float g_y = g_x * (gl_NumWorkGroups.y -1) / (gl_NumWorkGroups.x -1); //Half the height of the viewport
 
 	vec3 q_x = ((2*g_x)/(gl_NumWorkGroups.x - 1)) * cameraRight; //Pixel-shift vector to the right
 	vec3 q_y = ((2*g_y)/(gl_NumWorkGroups.y - 1)) * cameraUp; //Pixel-shift vector up
@@ -35,6 +68,17 @@ void main() {
 
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
-    imageStore(imageOut, pixelCoord, vec4(ray.direction, 1.0f));
+	float dist = pow(2,31);
+	vec3 color = ray.direction;
+	for (int i = 0; i < spheres.length(); i++) {
+		float result = testSphere(ray, spheres[i]);
+		if (result > 0.0f && result < dist) {
+			dist = result;
+			color = spheres[i].color;
+		}
+	}
+	
+
+    imageStore(imageOut, pixelCoord, vec4(color, 1.0f));
 }
 )"

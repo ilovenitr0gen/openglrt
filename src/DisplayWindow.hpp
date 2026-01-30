@@ -31,17 +31,38 @@ class DisplayWindow {
 		std::list<std::function<void(GLFWwindow *, const double,
 									 const double)>>::iterator iter);
 
+	std::list<std::function<void(GLFWwindow *, int, int, int, int)>>::iterator
+	registerKeyCallback(
+		std::function<void(GLFWwindow *, int, int, int, int)> callback);
+
+	void unregisterKeyCallback(
+		std::list<std::function<void(GLFWwindow *, int, int, int, int)>>::
+			iterator iter);
+
+	std::list<std::function<void()>>::iterator
+	registerTickCallback(std::function<void()> callback);
+
+	void
+	unregisterTickCallback(std::list<std::function<void()>>::iterator iter);
+
 	std::pair<int, int> getFramebufferSize();
 
 	bool shouldClose();
 	void swapBuffers();
+	[[nodiscard]] double deltaTime() const;
 
   private:
 	GLFWwindow *window;
 	unsigned int vao = 0;
 
+	double deltaTime_;
+	double lastFrame;
+
 	std::list<std::function<void(GLFWwindow *, const int, const int)>>
 		framebufferSizeCallbacks;
 	std::list<std::function<void(GLFWwindow *, const double, const double)>>
 		cursorPosCallbacks;
+	std::list<std::function<void(GLFWwindow *, int, int, int, int)>>
+		keyCallbacks;
+	std::list<std::function<void()>> tickCallbacks;
 };

@@ -14,6 +14,13 @@ class Camera {
 		void rotate(float yaw, float pitch);
 
 	private:
+		struct InputState {
+			bool forward;
+			bool left;
+			bool back;
+			bool right;
+		} inputState;
+
 		glm::vec3 position_;
 		glm::vec3 direction_;
 		glm::vec3 up_;
@@ -25,7 +32,8 @@ class Camera {
 		double lastX;
 		double lastY;
 
-		double sensitivity = 1;
+		double sensitivity = 0.5;
+		double speed = 5;
 
 		DisplayWindow &window;
 };
