@@ -43,6 +43,17 @@ DisplayWindow::DisplayWindow() {
 			glViewport(0, 0, width, height);
 		});
 
+	glfwSetCursorPosCallback(
+		window, [](GLFWwindow *window, double xpos, double ypos) {
+			for (auto &callback :
+				 static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))
+					 ->cursorPosCallbacks) {
+				callback(window, xpos, ypos);
+			}
+		});
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	// This has to be done for OpenGL to render anything for some reason,
 	// regardless of if it is needed
 	glGenVertexArrays(1, &vao);
@@ -66,6 +77,20 @@ void DisplayWindow::unregisterFramebufferSizeCallback(
 	std::list<std::function<void(GLFWwindow *, const int, const int)>>::iterator
 		iter) {
 	framebufferSizeCallbacks.erase(iter);
+}
+
+std::list<
+	std::function<void(GLFWwindow *, const double, const double)>>::iterator
+DisplayWindow::registerCursorPosCallback(
+	std::function<void(GLFWwindow *, const double, const double)> callback) {
+	cursorPosCallbacks.emplace_back(std::move(callback));
+	return --cursorPosCallbacks.end();
+}
+
+void DisplayWindow::unregisterCursorPosCallback(
+	std::list<std::function<void(GLFWwindow *, const double, const double)>>::
+		iterator iter) {
+	cursorPosCallbacks.erase(iter);
 }
 
 std::pair<int, int> DisplayWindow::getFramebufferSize() {

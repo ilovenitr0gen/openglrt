@@ -22,6 +22,15 @@ class DisplayWindow {
 		std::list<std::function<void(GLFWwindow *, const int, const int)>>::
 			iterator iter);
 
+	std::list<
+		std::function<void(GLFWwindow *, const double, const double)>>::iterator
+	registerCursorPosCallback(
+		std::function<void(GLFWwindow *, const double, const double)> callback);
+
+	void unregisterCursorPosCallback(
+		std::list<std::function<void(GLFWwindow *, const double,
+									 const double)>>::iterator iter);
+
 	std::pair<int, int> getFramebufferSize();
 
 	bool shouldClose();
@@ -33,4 +42,6 @@ class DisplayWindow {
 
 	std::list<std::function<void(GLFWwindow *, const int, const int)>>
 		framebufferSizeCallbacks;
+	std::list<std::function<void(GLFWwindow *, const double, const double)>>
+		cursorPosCallbacks;
 };

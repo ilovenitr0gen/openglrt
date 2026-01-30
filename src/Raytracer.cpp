@@ -1,5 +1,7 @@
 #include "Raytracer.hpp"
 
+#include <cmath>
+
 const std::string vertexSource =
 #include "shaders/shader.vert"
 	;
@@ -26,9 +28,17 @@ Raytracer::Raytracer(DisplayWindow &window)
 		});
 }
 
-void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir) {
+void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir, glm::vec3 cameraUp) {
 
 	renderShader.use();
+
+	//All these vectors should be normalised
+	renderShader.setVec3("cameraPos", cameraPos);
+	renderShader.setVec3("cameraDir", cameraDir);
+	renderShader.setVec3("cameraUp", cameraUp);
+	renderShader.setVec3("cameraRight", glm::cross(cameraDir, cameraUp));
+	renderShader.setFloat("fieldOfView", std::acos(0.0f));
+
 	auto [width, height] = attachedWindow.getFramebufferSize();
 	glDispatchCompute((unsigned int)width, (unsigned int)height, 1);
 

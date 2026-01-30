@@ -11,7 +11,7 @@ class Raytracer {
   public:
 	explicit Raytracer(DisplayWindow &window);
 
-	void draw(glm::vec3 cameraPos, glm::vec3 cameraDir);
+	void draw(glm::vec3 cameraPos, glm::vec3 cameraDir, glm::vec3 cameraUp);
 
 	Raytracer(const Raytracer &) = delete;
 	Raytracer &operator=(const Raytracer &) = delete;

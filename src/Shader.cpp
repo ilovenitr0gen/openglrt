@@ -19,7 +19,7 @@ Shader::Shader(const ShaderInfo shaderInfo) : id(glCreateProgram()) {
 		glShaderSource(vertex, 1, &vertexChars, nullptr);
 		glCompileShader(vertex);
 		glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-		if (!success) {
+		if (success == 0) {
 			glGetShaderInfoLog(vertex, INFO_LOG_SIZE, nullptr, infoLog);
 			throw std::runtime_error(
 				std::format("Vertex shader failed to compile.\n{}", infoLog));
@@ -33,7 +33,7 @@ Shader::Shader(const ShaderInfo shaderInfo) : id(glCreateProgram()) {
 		glShaderSource(fragment, 1, &fragmentChars, nullptr);
 		glCompileShader(fragment);
 		glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-		if (!success) {
+		if (success == 0) {
 			glGetShaderInfoLog(fragment, INFO_LOG_SIZE, nullptr, infoLog);
 			throw std::runtime_error(
 				std::format("Fragment shader failed to compile.\n{}", infoLog));
@@ -47,7 +47,7 @@ Shader::Shader(const ShaderInfo shaderInfo) : id(glCreateProgram()) {
 		glShaderSource(compute, 1, &computeChars, nullptr);
 		glCompileShader(compute);
 		glGetShaderiv(compute, GL_COMPILE_STATUS, &success);
-		if (!success) {
+		if (success == 0) {
 			glGetShaderInfoLog(compute, INFO_LOG_SIZE, nullptr, infoLog);
 			throw std::runtime_error(
 				std::format("Compute shader failed to compile.\n{}", infoLog));
@@ -57,7 +57,7 @@ Shader::Shader(const ShaderInfo shaderInfo) : id(glCreateProgram()) {
 
 	glLinkProgram(id);
 	glGetProgramiv(id, GL_LINK_STATUS, &success);
-	if (!success) {
+	if (success == 0) {
 		glGetProgramInfoLog(id, INFO_LOG_SIZE, nullptr, infoLog);
 		throw std::runtime_error(
 			std::format("Shader program failed to link.\n{}", infoLog));
@@ -77,3 +77,11 @@ Shader::Shader(const ShaderInfo shaderInfo) : id(glCreateProgram()) {
 Shader::~Shader() { glDeleteProgram(id); }
 
 void Shader::use() const { glUseProgram(id); }
+
+void Shader::setVec3(const std::string &name, const glm::vec3 &value) {
+	glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
+}
+
+void Shader::setFloat(const std::string &name, const float &value) {
+	glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+}

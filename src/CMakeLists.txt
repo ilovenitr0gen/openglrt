@@ -28,6 +28,7 @@ add_executable(project123
 		DisplayWindow.cpp
 		Shader.cpp
 		Raytracer.cpp
+		Camera.cpp
 		glad/glad.c
 	)
 
