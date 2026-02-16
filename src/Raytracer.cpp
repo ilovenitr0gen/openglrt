@@ -28,18 +28,33 @@ Raytracer::Raytracer(DisplayWindow &window)
 		});
 }
 
-void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir, glm::vec3 cameraUp) {
+void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir,
+					 glm::vec3 cameraUp) {
+
+	const float fieldOfView = std::acos(0.0f);
+
+	auto [width, height] = attachedWindow.getFramebufferSize();
+
+	// calculate values needed for shader
+
+	glm::vec3 cameraRight = glm::cross(cameraDir, cameraUp);
+
+	float g_x = std::tan(fieldOfView / 2);
+	float g_y = g_x * (height - 1) / (width - 1);
+
+	glm::vec3 q_x = ((2 * g_x) / (width - 1)) * cameraRight;
+	glm::vec3 q_y = ((2 * g_y) / (height - 1)) * cameraUp;
+
+	glm::vec3 startPixel = cameraDir - g_x * cameraRight - g_y * cameraUp;
 
 	renderShader.use();
 
-	//All these vectors should be normalised
-	renderShader.setVec3("cameraPos", cameraPos);
-	renderShader.setVec3("cameraDir", cameraDir);
-	renderShader.setVec3("cameraUp", cameraUp);
-	renderShader.setVec3("cameraRight", glm::cross(cameraDir, cameraUp));
-	renderShader.setFloat("fieldOfView", std::acos(0.0f));
+	renderShader.setVec3("q_x", q_x);
+	renderShader.setVec3("q_y", q_y);
+	renderShader.setVec3("startPixel", startPixel);
 
-	auto [width, height] = attachedWindow.getFramebufferSize();
+	renderShader.setVec3("cameraPos", cameraPos);
+
 	glDispatchCompute((unsigned int)width, (unsigned int)height, 1);
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);

@@ -5,6 +5,10 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imageOut;
 
+struct Material {
+	vec3 color;
+};
+
 struct Sphere {
 	vec3 position;
 	float radiusSquared;
@@ -28,17 +32,17 @@ struct SphereTestResult {
 const Sphere spheres[] = {
 	Sphere(vec3(15,0,0), 100, vec3(0,1,0), false),
 	Sphere(vec3(0,20,0), 64, vec3(0,0,1), false),
-	Sphere(vec3(-50,-40,10), 3000, vec3(1,1,1), true)
+	Sphere(vec3(-50,-40,10), 3000, vec3(1,1,1), true),
+	Sphere(vec3(100, 150, 0), 2000, vec3(1,0,0), false),
+	Sphere(vec3(0, -10000, 0), 10000000, vec3(1, 0.7, 0), false)
 };
 
-const uint maxRayCount = 8;
+const uint maxRayCount = 4;
 
 uniform vec3 cameraPos;
-uniform vec3 cameraDir;
-uniform vec3 cameraUp;
-uniform vec3 cameraRight;
-
-uniform float fieldOfView;
+uniform vec3 q_x;
+uniform vec3 q_y;
+uniform vec3 startPixel;
 
 //gl_NumWorkGroups is equal to the resolution of the image to be rendered  
 //gl_GlobalInvocationID is equal to the position of the current pixel as an integer
@@ -78,15 +82,6 @@ SphereTestResult testSphere(Ray ray, Sphere sphere) { //returns the point of nea
 }
 
 void main() {
-
-	//TODO move this to precalculation outside the shader
-	float g_x = tan(fieldOfView/2); //Half the width of the viewport
-	float g_y = g_x * (gl_NumWorkGroups.y -1) / (gl_NumWorkGroups.x -1); //Half the height of the viewport
-
-	vec3 q_x = ((2*g_x)/(gl_NumWorkGroups.x - 1)) * cameraRight; //Pixel-shift vector to the right
-	vec3 q_y = ((2*g_y)/(gl_NumWorkGroups.y - 1)) * cameraUp; //Pixel-shift vector up
-
-	vec3 startPixel = cameraDir - g_x * cameraRight - g_y * cameraUp; //Bottom-left pixel of the viewport
 
 	Ray ray = Ray(cameraPos, normalize(startPixel + q_x * (gl_GlobalInvocationID.x) + q_y * (gl_GlobalInvocationID.y))); // indexed from top-left
 

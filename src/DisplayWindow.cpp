@@ -27,8 +27,6 @@ DisplayWindow::DisplayWindow() {
 		throw std::runtime_error("GLAD initialization failed");
 	}
 
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-
 	glfwSetFramebufferSizeCallback(
 		window, [](GLFWwindow *window, const int width, const int height) {
 			for (auto &callback :
@@ -67,6 +65,9 @@ DisplayWindow::DisplayWindow() {
 	// regardless of if it is needed
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
+
+	auto [width, height] = getFramebufferSize(); 
+	glViewport(0, 0, width, height); //manually set
 }
 
 DisplayWindow::~DisplayWindow() {
