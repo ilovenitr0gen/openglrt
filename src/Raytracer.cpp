@@ -27,11 +27,21 @@ Raytracer::Raytracer(DisplayWindow &window)
 		[this](GLFWwindow * /*window*/, const int width, const int height) {
 			resetImage(width, height);
 		});
+	window.registerKeyCallback([this](GLFWwindow *window, int keycode,
+									  int scancode, int action, int mods) {
+		if (keycode == GLFW_KEY_R and action == GLFW_PRESS) {
+			frameIndex = 0;
+			shouldAccumulate = !shouldAccumulate;
+		}
+	});
 }
 
 void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir,
 					 glm::vec3 cameraUp) {
 
+	if (frameIndex == 0 and shouldAccumulate) {
+		glClearTexImage(imageOutput, 0, GL_RGBA, GL_FLOAT, 0);
+	}
 	const float fieldOfView = std::acos(0.0f);
 
 	auto [width, height] = attachedWindow.getFramebufferSize();
@@ -50,11 +60,17 @@ void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir,
 
 	renderShader.use();
 
+	renderShader.setFloat("deltaTime", attachedWindow.deltaTime());
+
+	renderShader.setInt("frameIndex", static_cast<int>(frameIndex));
+
 	renderShader.setVec3("q_x", q_x);
 	renderShader.setVec3("q_y", q_y);
 	renderShader.setVec3("startPixel", startPixel);
 
 	renderShader.setVec3("cameraPos", cameraPos);
+
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	glDispatchCompute((unsigned int)width, (unsigned int)height, 1);
 
@@ -66,6 +82,10 @@ void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir,
 	glBindTexture(GL_TEXTURE_2D, imageOutput);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	if (shouldAccumulate) {
+		++frameIndex;
+	}
 }
 
 Raytracer::~Raytracer() {

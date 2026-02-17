@@ -26,19 +26,22 @@ struct SphereTestResult {
 	float dist;
 	vec3 position;
 	vec3 normal;
-	vec3 color;
 };
 
 const Sphere spheres[] = {
 	Sphere(vec3(15,0,0), 100, vec3(0,0.9,0), false),
 	Sphere(vec3(0,20,0), 64, vec3(0,0,0.9), false),
 	Sphere(vec3(-50,-40,10), 3000, vec3(1,1,1), true),
-	Sphere(vec3(100, 150, 0), 2000, vec3(0.9,0,0), false),
-	Sphere(vec3(0, -10000, 0), 10000000, vec3(0.9, 0.7, 0), false)
+	//Sphere(vec3(100, 150, 0), 2000, vec3(0.9,0,0), false),
+	//Sphere(vec3(0, -10000, 0), 10000000, vec3(0.9, 0.7, 0), false)
 };
 
 const uint maxDepth = 8;
-const uint samplesPerPixel = 64;
+const uint samplesPerPixel = 16;
+
+uniform float deltaTime;
+
+uniform int frameIndex;
 
 uniform vec3 cameraPos;
 uniform vec3 q_x;
@@ -46,7 +49,7 @@ uniform vec3 q_y;
 uniform vec3 startPixel;
 
 //gl_NumWorkGroups is equal to the resolution of the image to be rendered  
-//gl_GlobalInvocationID is equal to the position of the current pixel as an integer
+//gl_WorkGroupID is equal to the position of the current pixel as an integer
 
 
 
@@ -84,30 +87,28 @@ vec3 randomHemisphereDirection(inout uint randomState, vec3 normal) {
 }
 
 
-//vec3 diffuseReflect(inout uint state, 
 
-SphereTestResult testSphere(Ray ray, Sphere sphere) { //returns the point of nearest intersection
-	ray.origin -= sphere.position;// this simplifies the intersection equation
-	float originDotDirection = dot(ray.origin, ray.direction);
-	float discriminant = pow(originDotDirection, 2) - (dot(ray.origin, ray.origin) - sphere.radiusSquared);
 
-	SphereTestResult result = SphereTestResult(false, 0.0f, vec3(0.0f), vec3(0.0f), vec3(0.0f));
+SphereTestResult testSphere(in Ray ray, in vec3 spherePosition, in float radiusSquared) { //returns the point of nearest intersection
+	vec3 offsetRayOrigin = ray.origin - spherePosition;// this simplifies the intersection equation
+	float originDotDirection = dot(offsetRayOrigin, ray.direction);
+	float discriminant = originDotDirection * originDotDirection - (dot(offsetRayOrigin, offsetRayOrigin) - radiusSquared);
+
+	SphereTestResult result;
+
+	result.intersects = false;
 
 	if (discriminant >= 0) {
 		float dist = -originDotDirection - sqrt(discriminant); //the second solution can be ignored as it is always further away from the ray origin, so would be behind the first solution
 		if (dist >= 0) {
 			result.intersects = true;
 			result.dist = dist;
+			result.position = ray.origin + ray.direction * result.dist; 
+			result.normal = normalize(result.position - spherePosition);
+			result.position += result.normal * 1.01;//the extra multiplier is so it doesnt intersect with itself on the next test
 		}
 	}
 	
-	if (result.intersects) {
-		result.position = ray.origin + ray.direction * result.dist + sphere.position; 
-		result.normal = normalize(result.position - sphere.position);
-		result.position += result.normal * 1.00001;//the extra multiplier is so it doesnt intersect with itself on the next test
-		result.color = sphere.color;
-	}
-
 	return result;
 }
 
@@ -117,14 +118,15 @@ vec3 traceRay(inout uint randomState, Ray ray) {
 	vec3 color = vec3(1.0f); //color of a ray which misses
 	
 	while (remainingRays > 0) {
-		SphereTestResult closestResult = SphereTestResult(false, pow(2,31), vec3(0.0f), vec3(0.0f), vec3(0.0f));
+		SphereTestResult closestResult = SphereTestResult(false, pow(2,31), vec3(0.0f), vec3(0.0f));
+		
+		int closestSphere = -1; //index of the sphere. -1 indicates no intersection
 
-		bool isLightSource = false;
 		for (int i = 0; i < spheres.length(); ++i) {
-			SphereTestResult result = testSphere(ray, spheres[i]);
+			SphereTestResult result = testSphere(ray, spheres[i].position, spheres[i].radiusSquared);
 			if (result.intersects && result.dist < closestResult.dist) {
 				closestResult = result;
-				isLightSource = spheres[i].lightSource;
+				closestSphere = i;
 			}
 		}
 
@@ -137,14 +139,16 @@ vec3 traceRay(inout uint randomState, Ray ray) {
 		//	}
 		//}
 		
-		if (closestResult.intersects) {
-			color *= closestResult.color;
+		if (closestSphere != -1) {
+			color *= spheres[closestSphere].color;
+			if (spheres[closestSphere].lightSource) {
+				break;
+			}
 		}
 
 		--remainingRays;
 
-		if (isLightSource) { break; }
-		else if (!closestResult.intersects || remainingRays == 0) { 
+		if (closestSphere == -1 || remainingRays == 0) { 
 			color = vec3(0.0f);
 			break;
 		}
@@ -159,18 +163,20 @@ vec3 traceRay(inout uint randomState, Ray ray) {
 
 void main() {
 
-	Ray ray = Ray(cameraPos, normalize(startPixel + q_x * (gl_GlobalInvocationID.x) + q_y * (gl_GlobalInvocationID.y))); // indexed from top-left
+	Ray ray = Ray(cameraPos, normalize(startPixel + q_x * (gl_WorkGroupID.x) + q_y * (gl_WorkGroupID.y))); // indexed from top-left
 
 	vec3 color = vec3(0.0f);
 
-	for (int i = 0; i < samplesPerPixel; ++i) {
-		uint randomState = gl_GlobalInvocationID.x + gl_NumWorkGroups.x * gl_GlobalInvocationID.y + i * 8329023; //random number of no significance
+	for (int i = 0; i < samplesPerPixel; ++i) {// TODO SPLIT INTO DIFFERENT WORK UNIT THINGS
+		uint randomState = gl_WorkGroupID.x + gl_NumWorkGroups.x * gl_WorkGroupID.y + i * 832349023 + frameIndex * 5324071/*random number of no significance*/; 
 		color += traceRay(randomState, ray);
 	}
 	
 	color /= samplesPerPixel;
 
-	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-    imageStore(imageOut, pixelCoord, vec4(color, 1.0f));
+	ivec2 pixelCoord = ivec2(gl_WorkGroupID.xy);
+	vec4 oldColor = imageLoad(imageOut, pixelCoord);
+	vec3 newColor = ( oldColor.xyz * (frameIndex) + color ) / (frameIndex+1);
+    imageStore(imageOut, pixelCoord, vec4(newColor, 1.0f));
 }
 )"

@@ -25,4 +25,7 @@ class Raytracer {
 	Shader displayShader;
 	Shader renderShader;
 	DisplayWindow &attachedWindow;
+
+	unsigned int frameIndex = 0;
+	bool shouldAccumulate = false;
 };
