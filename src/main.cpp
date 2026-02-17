@@ -1,3 +1,4 @@
+#include <iostream>
 #include <print>
 
 #include "Camera.hpp"
@@ -8,20 +9,24 @@
 #include "DisplayWindow.hpp"
 #include "Shader.hpp"
 
-constexpr unsigned int WINDOW_WIDTH = 600;
-constexpr unsigned int WINDOW_HEIGHT = 400;
+constexpr unsigned int WINDOW_WIDTH = 1280;
+constexpr unsigned int WINDOW_HEIGHT = 720;
 constexpr char WINDOW_TITLE[] = "Title";
 
 constexpr double CAMERA_SENSITIVITY = 0.005f;
 
 int main() {
 	std::println("Hello!");
-	
+
 	DisplayWindow window;
 	Raytracer raytracer(window);
-	Camera camera(window, glm::vec3(0), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), CAMERA_SENSITIVITY);
+	Camera camera(window, glm::vec3(0), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0),
+				  CAMERA_SENSITIVITY);
+
+	uint64_t frameCount = 0;
 
 	while (!window.shouldClose()) {
+
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -29,6 +34,13 @@ int main() {
 
 		window.swapBuffers();
 		glfwPollEvents();
+
+		if (frameCount % 10 == 0) {
+
+			std::cout << "MSPF: " << window.deltaTime() * 1000 <<  "\t | FPS: " << 1 / window.deltaTime() << "\n";
+			//std::println("hi");
+		}
+		frameCount++;
 	}
 
 	return 0;

@@ -1,6 +1,7 @@
 #include "Raytracer.hpp"
 
 #include <cmath>
+#include <iostream>
 
 const std::string vertexSource =
 #include "shaders/shader.vert"

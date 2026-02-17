@@ -18,7 +18,7 @@ DisplayWindow::DisplayWindow() {
 	}
 
 	glfwMakeContextCurrent(window);
-	// glfwSwapInterval(0);
+	glfwSwapInterval(0);
 
 	glfwSetWindowUserPointer(window, this);
 

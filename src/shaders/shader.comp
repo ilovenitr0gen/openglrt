@@ -30,14 +30,15 @@ struct SphereTestResult {
 };
 
 const Sphere spheres[] = {
-	Sphere(vec3(15,0,0), 100, vec3(0,1,0), false),
-	Sphere(vec3(0,20,0), 64, vec3(0,0,1), false),
+	Sphere(vec3(15,0,0), 100, vec3(0,0.9,0), false),
+	Sphere(vec3(0,20,0), 64, vec3(0,0,0.9), false),
 	Sphere(vec3(-50,-40,10), 3000, vec3(1,1,1), true),
-	Sphere(vec3(100, 150, 0), 2000, vec3(1,0,0), false),
-	Sphere(vec3(0, -10000, 0), 10000000, vec3(1, 0.7, 0), false)
+	Sphere(vec3(100, 150, 0), 2000, vec3(0.9,0,0), false),
+	Sphere(vec3(0, -10000, 0), 10000000, vec3(0.9, 0.7, 0), false)
 };
 
-const uint maxRayCount = 4;
+const uint maxDepth = 8;
+const uint samplesPerPixel = 64;
 
 uniform vec3 cameraPos;
 uniform vec3 q_x;
@@ -47,6 +48,44 @@ uniform vec3 startPixel;
 //gl_NumWorkGroups is equal to the resolution of the image to be rendered  
 //gl_GlobalInvocationID is equal to the position of the current pixel as an integer
 
+
+
+// www.pcg-random.org and www.shadertoy.com/view/XlGcRh
+uint nextRandom(inout uint randomState) {
+	randomState = randomState * 747796405 + 2891336453;
+	uint result = ((randomState >> ((randomState >> 28) + 4)) ^ randomState) * 277803737;
+	result = (result >> 22) ^ result;
+	return result;
+}
+
+// scaled value (0 to 1)
+float randomFloatNormalized(inout uint randomState) {
+	return nextRandom(randomState) / 4294967295.0; // 2^32 - 1
+}
+
+
+// https://stackoverflow.com/a/6178290
+float randomFloatNormalDistribution(inout uint randomState) {
+	float theta = 2 * 3.1415926 * randomFloatNormalized(randomState);
+	float rho = sqrt(-2 * log(randomFloatNormalized(randomState)));
+	return rho * cos(theta);
+}
+
+vec3 randomDirection(inout uint randomState) {
+	return normalize(vec3(
+				randomFloatNormalDistribution(randomState),
+				randomFloatNormalDistribution(randomState),
+				randomFloatNormalDistribution(randomState)));
+}
+
+vec3 randomHemisphereDirection(inout uint randomState, vec3 normal) {
+	vec3 dir = randomDirection(randomState);
+	return dir * sign(dot(normal, dir));
+}
+
+
+//vec3 diffuseReflect(inout uint state, 
+
 SphereTestResult testSphere(Ray ray, Sphere sphere) { //returns the point of nearest intersection
 	ray.origin -= sphere.position;// this simplifies the intersection equation
 	float originDotDirection = dot(ray.origin, ray.direction);
@@ -54,21 +93,12 @@ SphereTestResult testSphere(Ray ray, Sphere sphere) { //returns the point of nea
 
 	SphereTestResult result = SphereTestResult(false, 0.0f, vec3(0.0f), vec3(0.0f), vec3(0.0f));
 
-	if (discriminant == 0 && (-originDotDirection) > 0) {
-		result.intersects = true;
-		result.dist = -originDotDirection;
-	} else if (discriminant > 0) {
-		result.intersects = true;
-		float discriminantRoot = sqrt(discriminant);
-		float d_1 = -originDotDirection + discriminantRoot;
-		float d_2 = -originDotDirection - discriminantRoot;
-		if (d_1 > 0 && d_2 > 0) {
-			result.dist = min(d_1, d_2);
-		} else if (d_1 > 0) {
-			result.dist = d_1;
-		} else if (d_2 > 0) {
-			result.dist = d_2;
-		} else { result.intersects = false; }
+	if (discriminant >= 0) {
+		float dist = -originDotDirection - sqrt(discriminant); //the second solution can be ignored as it is always further away from the ray origin, so would be behind the first solution
+		if (dist >= 0) {
+			result.intersects = true;
+			result.dist = dist;
+		}
 	}
 	
 	if (result.intersects) {
@@ -81,52 +111,66 @@ SphereTestResult testSphere(Ray ray, Sphere sphere) { //returns the point of nea
 	return result;
 }
 
-void main() {
+vec3 traceRay(inout uint randomState, Ray ray) {
+	uint remainingRays = maxDepth;
 
-	Ray ray = Ray(cameraPos, normalize(startPixel + q_x * (gl_GlobalInvocationID.x) + q_y * (gl_GlobalInvocationID.y))); // indexed from top-left
-
-	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-
-	vec3 color = vec3(0.0f); //color of a ray which misses
+	vec3 color = vec3(1.0f); //color of a ray which misses
 	
-	uint remainingRays = maxRayCount;
-
-	vec3 lastColor = vec3(0.0f);
-
 	while (remainingRays > 0) {
 		SphereTestResult closestResult = SphereTestResult(false, pow(2,31), vec3(0.0f), vec3(0.0f), vec3(0.0f));
 
 		bool isLightSource = false;
-		for (int i = 0; i < spheres.length(); i++) {
+		for (int i = 0; i < spheres.length(); ++i) {
 			SphereTestResult result = testSphere(ray, spheres[i]);
 			if (result.intersects && result.dist < closestResult.dist) {
 				closestResult = result;
 				isLightSource = spheres[i].lightSource;
 			}
 		}
+
+		//for (int i = 0; i < 30; i++) {
+		//	Sphere sphere = Sphere(vec3(15 + i * 2,0,0), 1, vec3(0.7,0,1-(float(i)/30.0)), false);
+		//	SphereTestResult result = testSphere(ray, sphere);
+		//	if (result.intersects && result.dist < closestResult.dist) {
+		//		closestResult = result;
+		//		isLightSource = sphere.lightSource;
+		//	}
+		//}
 		
 		if (closestResult.intersects) {
-			lastColor = closestResult.color;
+			color *= closestResult.color;
 		}
-
-		ray.direction = reflect(ray.direction, closestResult.normal);
-		ray.origin = closestResult.position;
 
 		--remainingRays;
 
-
-		if (isLightSource) { remainingRays = 0; color = closestResult.color;}
-		//else if (remainingRays == 0) {color = vec3(0.0f);}
-		
+		if (isLightSource) { break; }
 		else if (!closestResult.intersects || remainingRays == 0) { 
-			color = lastColor * (remainingRays+1)/maxRayCount;
-			remainingRays = 0; 
+			color = vec3(0.0f);
+			break;
 		}
+		
+		//ray.direction = reflect(ray.direction, closestResult.normal);
+		ray.direction = randomHemisphereDirection(randomState, closestResult.normal);
+		ray.origin = closestResult.position;
 	}
 
-	
-	
+	return color;
+};
 
+void main() {
+
+	Ray ray = Ray(cameraPos, normalize(startPixel + q_x * (gl_GlobalInvocationID.x) + q_y * (gl_GlobalInvocationID.y))); // indexed from top-left
+
+	vec3 color = vec3(0.0f);
+
+	for (int i = 0; i < samplesPerPixel; ++i) {
+		uint randomState = gl_GlobalInvocationID.x + gl_NumWorkGroups.x * gl_GlobalInvocationID.y + i * 8329023; //random number of no significance
+		color += traceRay(randomState, ray);
+	}
+	
+	color /= samplesPerPixel;
+
+	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
     imageStore(imageOut, pixelCoord, vec4(color, 1.0f));
 }
 )"
