@@ -52,6 +52,12 @@ Camera::Camera(DisplayWindow &window, glm::vec3 position, glm::vec3 direction,
 				inputState.right = false;
 			}
 			break;
+		case GLFW_KEY_EQUAL:
+			speed *= 1.1;
+			break;
+		case GLFW_KEY_MINUS:
+			speed *= 0.9;
+			break;
 		}
 	});
 	window.registerTickCallback([this]() {

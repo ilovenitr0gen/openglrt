@@ -61,6 +61,7 @@ void Raytracer::draw(glm::vec3 cameraPos, glm::vec3 cameraDir,
 	renderShader.use();
 
 	renderShader.setFloat("deltaTime", attachedWindow.deltaTime());
+	renderShader.setFloat("time", static_cast<float>(glfwGetTime()));
 
 	renderShader.setInt("frameIndex", static_cast<int>(frameIndex));
 
