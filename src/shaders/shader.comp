@@ -195,24 +195,25 @@ void main() {
 	}
 	
 	color /= samplesPerPixel;
+	color = clamp(color, 0.0f, 1.0f); //this seems to fix the weird pixel issue
 
 	ivec2 pixelCoord = ivec2(gl_WorkGroupID.xy);
 	vec4 oldColor = imageLoad(imageOut, pixelCoord);
-	//vec3 newColor = ( oldColor.xyz * frameIndex + color ) / (frameIndex+1.0f);
-	vec3 newColor = float(frameIndex)/(frameIndex+1.0f) * oldColor.xyz + color/(frameIndex+1.0f);
+	float strength = 1.0/(frameIndex+1);
+	vec3 newColor = (1-strength) * oldColor.xyz + strength*color;
 
 
 	//uint randomState = gl_WorkGroupID.x + gl_NumWorkGroups.x * gl_WorkGroupID.y + (uint(floor(time))) * 719393/*random number of no significance*/; 
 	//vec3 randomColor = vec3(1,1,1) * randomFloatNormalized(randomState);
 
 	//if (((newColor.x > 1.0f || newColor.x < 0.0f) ||(newColor.y > 1.0f || newColor.y < 0.0f) ||(newColor.z > 1.0f || newColor.z < 0.0f))) {
-	//	newColor = vec3(1,0,1);
+	//	newColor = vec3(1,0,0);
 	//}
 	
 	//newColor = vec3(max(oldColor.x, color.x), max(oldColor.y, color.y), max(oldColor.z, color.z));
 		
-
-    //imageStore(imageOut, pixelCoord, vec4(newColor, 1.0f));
-	imageStore(imageOut, pixelCoord, vec4(min(newColor.x, 1.0f), min(newColor.y, 1.0f), min(newColor.z, 1.0f), 1.0f));
+	vec4 clampedColor = clamp(vec4(newColor, 1.0f),0.0f, 1.0f);
+    imageStore(imageOut, pixelCoord, clampedColor);
+	imageStore(imageOut, pixelCoord, vec4(min(clampedColor.x, 1.0f), min(clampedColor.y, 1.0f), min(clampedColor.z, 1.0f), 1.0f));
 }
 )"
