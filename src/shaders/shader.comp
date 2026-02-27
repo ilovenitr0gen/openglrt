@@ -33,13 +33,13 @@ const Sphere spheres[] = {
 	Sphere(vec3(-15,0,0), 64, vec3(0,0,1), false),
 	Sphere(vec3(0,5,0), 49, vec3(1,1,1), false),
 	Sphere(vec3(0,-100,0), 10000, vec3(0.5, 0, 0.5), false),
-	Sphere(vec3(10000,100,0), 3000000, vec3(20,20,20), true),
+	Sphere(vec3(10000,100,0), 3000000, vec3(100,100,100), true),
 	//Sphere(vec3(100, 150, 0), 2000, vec3(0.9,0,0), false),
 	//Sphere(vec3(0, -10000, 0), 10000000, vec3(0.9, 0.7, 0), false)
 };
 
 const uint maxDepth = 8;
-const uint samplesPerPixel = 8;
+const uint samplesPerPixel = 1;
 
 uniform float deltaTime;
 uniform float time;
@@ -93,7 +93,7 @@ vec3 randomHemisphereDirection(inout uint randomState, vec3 normal) {
 
 
 vec3 environmentLight(vec3 direction) {
-	return vec3(0.56, 0.72, 0.9) * min(direction.y + 0.8, 1.0f);
+	return vec3(0.56, 0.72, 0.9) * clamp(direction.y + 0.8, 0.0f, 1.0f);
 }
 
 SphereTestResult testSphere(in Ray ray, in vec3 spherePosition, in float radiusSquared) { //returns the point of nearest intersection
@@ -155,10 +155,10 @@ vec3 traceRay(inout uint randomState, Ray ray) {
 				//ray.direction = reflect(ray.direction, closestResult.normal);
 				ray.direction = randomHemisphereDirection(randomState, closestResult.normal);
 				ray.origin = closestResult.position;
-				float lightStrength = dot(closestResult.normal, ray.direction); //Lambert's cosine law
+				float lightStrength = clamp(dot(closestResult.normal, ray.direction), 0.0f, 1.0f); //Lambert's cosine law (clamped so only real values are used)
 				//lightStrength = 1.0f;
-				//if (lightStrength > 1.0f || lightStrength < 0.0f) {
-				//	color = vec3(1000,0,1000);
+				//if (lightStrength < 0.0f) {
+				//	color = vec3(1000000000,0,0);
 				//	break;
 				//}
 				color *= spheres[closestSphere].color * lightStrength;
@@ -195,7 +195,6 @@ void main() {
 	}
 	
 	color /= samplesPerPixel;
-	color = clamp(color, 0.0f, 1.0f); //this seems to fix the weird pixel issue
 
 	ivec2 pixelCoord = ivec2(gl_WorkGroupID.xy);
 	vec4 oldColor = imageLoad(imageOut, pixelCoord);
@@ -213,7 +212,6 @@ void main() {
 	//newColor = vec3(max(oldColor.x, color.x), max(oldColor.y, color.y), max(oldColor.z, color.z));
 		
 	vec4 clampedColor = clamp(vec4(newColor, 1.0f),0.0f, 1.0f);
-    imageStore(imageOut, pixelCoord, clampedColor);
-	imageStore(imageOut, pixelCoord, vec4(min(clampedColor.x, 1.0f), min(clampedColor.y, 1.0f), min(clampedColor.z, 1.0f), 1.0f));
+    imageStore(imageOut, pixelCoord, vec4(newColor, 1.0f));
 }
 )"
