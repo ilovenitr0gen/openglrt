@@ -1,6 +1,8 @@
 R"(
 #version 460 core
 
+#define PI 3.1415926538
+
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imageOut;
@@ -33,13 +35,19 @@ const Sphere spheres[] = {
 	Sphere(vec3(-15,0,0), 64, vec3(0,0,1), false),
 	Sphere(vec3(0,5,0), 49, vec3(1,1,1), false),
 	Sphere(vec3(0,-100,0), 10000, vec3(0.5, 0, 0.5), false),
-	Sphere(vec3(10000,100,0), 3000000, vec3(100,100,100), true),
+	//Sphere(vec3(10000,100,0), 3000000, vec3(20,20,20), true),
 	//Sphere(vec3(100, 150, 0), 2000, vec3(0.9,0,0), false),
 	//Sphere(vec3(0, -10000, 0), 10000000, vec3(0.9, 0.7, 0), false)
 };
 
 const uint maxDepth = 8;
-const uint samplesPerPixel = 1;
+const uint samplesPerPixel = 16;
+
+const vec3 sunPos = normalize(vec3(1, 0.7, 1));
+const float sunSize = 1 - (0.003f);
+const float sunIntensity = 300.0f;
+const float sunBloom = 0.9f;
+const vec3 atmosphereLight = vec3(0.56, 0.72, 0.9);
 
 uniform float deltaTime;
 uniform float time;
@@ -63,6 +71,13 @@ uint nextRandom(inout uint randomState) {
 	result = (result >> 22) ^ result;
 	return result;
 }
+
+//uint nextRandom(inout uint randomState) {
+//	uint state = randomState;
+//	randomState = randomState * 747796405u + 2891336453u;
+//	uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+//	return (word >> 22u) ^ word;
+//}
 
 // scaled value (0 to 1)
 float randomFloatNormalized(inout uint randomState) {
@@ -89,11 +104,15 @@ vec3 randomHemisphereDirection(inout uint randomState, vec3 normal) {
 	return dir * sign(dot(normal, dir));
 }
 
-
-
-
 vec3 environmentLight(vec3 direction) {
-	return vec3(0.56, 0.72, 0.9) * clamp(direction.y + 0.8, 0.0f, 1.0f);
+	vec3 sky = atmosphereLight * smoothstep(0.0f, 1.0f, clamp(direction.y + 0.8, 0.0f, 1.0f));
+	
+	vec3 sun = vec3(0.0f, 0.0f, 0.0f);
+	float d = dot(direction, sunPos);
+	if (d > sunSize) {
+		sun = vec3(1,1,1) * sunIntensity;
+	}
+	return sky + sun;
 }
 
 SphereTestResult testSphere(in Ray ray, in vec3 spherePosition, in float radiusSquared) { //returns the point of nearest intersection
@@ -189,8 +208,9 @@ void main() {
 
 	vec3 color = vec3(0.0f);
 
+	uint randomState = gl_WorkGroupID.x + gl_NumWorkGroups.x * gl_WorkGroupID.y + frameIndex * 719393; 
 	for (int i = 0; i < samplesPerPixel; ++i) {
-		uint randomState = gl_WorkGroupID.x + gl_NumWorkGroups.x * gl_WorkGroupID.y + (i + frameIndex * samplesPerPixel) * 719393/*random number of no significance*/; 
+		//uint randomState = gl_WorkGroupID.x + gl_NumWorkGroups.x * gl_WorkGroupID.y + (i + frameIndex * samplesPerPixel) * 719393/*random number of no significance*/; 
 		color += traceRay(randomState, ray);
 	}
 	
@@ -211,7 +231,7 @@ void main() {
 	
 	//newColor = vec3(max(oldColor.x, color.x), max(oldColor.y, color.y), max(oldColor.z, color.z));
 		
-	vec4 clampedColor = clamp(vec4(newColor, 1.0f),0.0f, 1.0f);
+	vec3 clampedColor = clamp(newColor,0.0f, 1.0f);
     imageStore(imageOut, pixelCoord, vec4(newColor, 1.0f));
 }
 )"
